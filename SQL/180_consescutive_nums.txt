@@ -1,0 +1,138 @@
+SQL Problem: Consecutive Numbers
+
+Table: Logs
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| num         | varchar |
++-------------+---------+
+
+id is the primary key for this table.
+id is an auto-increment column starting from 1.
+
+Write a SQL query to find all numbers that appear at least three times consecutively.
+
+Return the result table in any order.
+
+The result column should be named ConsecutiveNums.
+
+Example:
+
+Input:
+Logs table
+
++----+-----+
+| id | num |
++----+-----+
+| 1  | 1   |
+| 2  | 1   |
+| 3  | 1   |
+| 4  | 2   |
+| 5  | 1   |
+| 6  | 2   |
+| 7  | 2   |
++----+-----+
+
+Output:
+
++-----------------+
+| ConsecutiveNums |
++-----------------+
+| 1               |
++-----------------+
+
+Explanation:
+The number 1 appears three times consecutively in rows with id 1, 2, and 3.
+
+
+--------------------------------------------------------------------------------
+
+my thought process:
+
+- had to get help with what function to use, ik it's not inner joins, so I thought LAG() would be it and it turns out it can be used
+- my naiive approach is to use 3 LAG checks... let me try that
+
+...
+where LAG(id, 1) = num
+and LAG(id, 2) = num
+and LAG(id, 3) = num
+...
+
+alright so im kinda wrong here. we need a subquery, let me start with that
+
+select
+  id,
+  num,
+  LAG(num, 1) OVER (ORDER BY id) as prev1,
+  LAG(num, 2) OVER (ORDER BY id) as prev2
+from
+  Logs
+
+now we wrap that in the result we actually want
+
+select distinct num as ConsecutiveNums
+from (
+    select
+    id,
+    num,
+    LAG(num, 1) OVER (ORDER BY id) as prev1,
+    LAG(num, 2) OVER (ORDER BY id) as prev2
+  from
+    Logs
+) x
+where num = prev1
+and num = prev2
+
+
+lil AI summary for future ref:
+
+My thought process:
+
+* I first recognized this probably should not be solved with a basic self-join.
+* Since the problem is asking about consecutive rows, a window function felt like the right tool.
+* `LAG()` makes sense here because it lets each row compare itself to previous rows.
+
+My naive first idea was to check three previous values:
+
+```sql
+where LAG(id, 1) = num
+and LAG(id, 2) = num
+and LAG(id, 3) = num
+```
+
+That was wrong for a few reasons:
+
+* I was comparing `id` to `num`, but I actually need to compare `num` to previous `num` values.
+* For three consecutive values, I only need the current row, the previous row, and the row two places back.
+* Window functions like `LAG()` usually need to be calculated in a subquery or CTE before filtering.
+
+First, create the lagged rows:
+
+```sql
+select
+  id,
+  num,
+  LAG(num, 1) OVER (ORDER BY id) as prev1,
+  LAG(num, 2) OVER (ORDER BY id) as prev2
+from Logs;
+```
+
+Then wrap that query and filter for rows where the current `num` matches the previous two `num` values:
+
+```sql
+select distinct num as ConsecutiveNums
+from (
+  select
+    id,
+    num,
+    LAG(num, 1) OVER (ORDER BY id) as prev1,
+    LAG(num, 2) OVER (ORDER BY id) as prev2
+  from Logs
+) x
+where num = prev1
+  and num = prev2;
+```
+
+`DISTINCT` is needed because a number that appears four or more times consecutively could match the condition multiple times.

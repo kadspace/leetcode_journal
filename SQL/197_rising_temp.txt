@@ -1,0 +1,68 @@
+SQL Problem: Rising Temperature
+
+Table: Weather
+
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| id          | int  |
+| recordDate  | date |
+| temperature | int  |
++-------------+------+
+
+id is the primary key for this table.
+recordDate contains the date of the weather record.
+temperature contains the temperature on that date.
+
+Write a SQL query to find the id of each day where the temperature was higher than the temperature on the previous calendar day.
+
+Return the result table in any order.
+
+Example:
+
+Input:
+Weather table
+
++----+------------+-------------+
+| id | recordDate | temperature |
++----+------------+-------------+
+| 1  | 2015-01-01 | 10          |
+| 2  | 2015-01-02 | 25          |
+| 3  | 2015-01-03 | 20          |
+| 4  | 2015-01-04 | 30          |
++----+------------+-------------+
+
+Output:
+
++----+
+| id |
++----+
+| 2  |
+| 4  |
++----+
+
+Explanation:
+On 2015-01-02, the temperature was 25, which is higher than 10 on the previous day.
+On 2015-01-04, the temperature was 30, which is higher than 20 on the previous day.
+
+--------------------------------------------------------------------------------
+
+
+my thought process:
+
+- i think this might be a join on itself (I need the temp of the row, compared with the temp of the "prior" row which can be anywhere in the table)
+
+select w1.id
+from weather w1
+left join weather w2 (uhh I think left join here?)
+on TO_DATE(w2.recordDate) = TO_DATE(TO_DATE(w1.recordDate) + TO_DATE(1)) (ik it's wrong but smt like this)
+where w1.temperature > w2.temperature
+
+- 2nd attempt with hints from gpt5.5. essentially, inner join is cleaner even tho my where clause would elimiinate the nulls and make the query valid
+- i just needed DATEDIFF(), nothing with TO_DATE here
+
+select w1.id
+from weather w1
+inner join weather w2
+on DATEDIFF(w1.recordDate, w2.recordDate) = 1
+where w1.temperature > w2.temperature

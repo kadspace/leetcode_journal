@@ -1,0 +1,144 @@
+SQL Problem: Second Highest Salary
+
+Table: Employee
+
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| id | int |
+| salary | int |
++-------------+------+
+
+id is the primary key for this table.
+
+Write a SQL query to find the second highest distinct salary from the Employee table.
+
+If there is no second highest salary, return null.
+
+The result column should be named SecondHighestSalary.
+
+Example 1:
+
+Input:
+Employee table
+
++----+--------+
+| id | salary |
++----+--------+
+| 1 | 100 |
+| 2 | 200 |
+| 3 | 300 |
++----+--------+
+
+Output:
+
++---------------------+
+| SecondHighestSalary |
++---------------------+
+| 200 |
++---------------------+
+
+Example 2:
+
+Input:
+Employee table
+
++----+--------+
+| id | salary |
++----+--------+
+| 1 | 100 |
++----+--------+
+
+Output:
+
++---------------------+
+| SecondHighestSalary |
++---------------------+
+| null |
++---------------------+
+
+Explanation:
+There is no second highest distinct salary, so the query should return null.
+
+
+--------------------------------------------------------------------------------
+
+AI summary of my thought process for future ref:
+
+My thought process:
+
+* I first thought about using a window function because I was thinking in terms of “find the row before this one.”
+* I considered `LAG()` / `DENSE_RANK()`, but that was overcomplicating the problem.
+* The problem is really just asking for the second highest **distinct** salary.
+
+The key word is `distinct`.
+
+If the salaries are:
+
+```sql
+300
+200
+200
+100
+```
+
+The second highest distinct salary is not based on row position in the original table. First, I need to remove duplicates:
+
+```sql
+select distinct salary
+from Employee;
+```
+
+Then I need to sort the unique salaries from highest to lowest:
+
+```sql
+select distinct salary
+from Employee
+order by salary desc;
+```
+
+That gives the logical list:
+
+```sql
+300
+200
+100
+```
+
+Now I want the second row from that sorted list.
+
+In MySQL, this is what `LIMIT 1 OFFSET 1` does:
+
+* `OFFSET 1` skips the first row.
+* `LIMIT 1` takes one row after that.
+
+So the core query is:
+
+```sql
+select distinct salary
+from Employee
+order by salary desc
+limit 1 offset 1;
+```
+
+The LeetCode annoyance is that if there is no second highest salary, this query returns no rows. But the problem wants one row with `null`.
+
+So we wrap the query as a scalar subquery:
+
+```sql
+select (
+  select distinct salary
+  from Employee
+  order by salary desc
+  limit 1 offset 1
+) as SecondHighestSalary;
+```
+
+The inner query finds the second highest distinct salary.
+
+The outer `select (...) as SecondHighestSalary` forces the output into the shape LeetCode wants:
+
+* if the inner query finds a value, return that value
+* if the inner query finds nothing, return `null`
+
+
